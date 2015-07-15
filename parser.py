@@ -8,6 +8,12 @@ import dateutil.parser
 from lxml import etree
 
 
+def to_decimal(value):
+    if value == '':
+        return None
+    return Decimal(value)
+
+
 class DSNParser(object):
 
     def __init__(self):
@@ -33,11 +39,11 @@ class DSNParser(object):
 
     def parse_dish(self, dish):
         data = {
-            'azimuth_angle': Decimal(dish.get('azimuthAngle')),       # Degrees
-            'elevation_angle': Decimal(dish.get('elevationAngle')),   # Degrees
-            'wind_speed': Decimal(dish.get('windSpeed')),             # km/h
+            'azimuth_angle': to_decimal(dish.get('azimuthAngle')),       # Degrees
+            'elevation_angle': to_decimal(dish.get('elevationAngle')),   # Degrees
+            'wind_speed': to_decimal(dish.get('windSpeed')),             # km/h
             'mspa': dish.get('isMSPA') == 'true',                   # Multiple Spacecraft Per Aperture
-            'array': dish.get('isArray') == 'true',                 # Dish is arrayeda
+            'array': dish.get('isArray') == 'true',                 # Dish is arrayed
             'ddor': dish.get('isDDOR') == 'true',                   # Delta-Differenced One Way Range
             'created': dateutil.parser.parse(dish.get('created')),
             'updated': dateutil.parser.parse(dish.get('updated')),

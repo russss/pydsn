@@ -2,9 +2,9 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 from time import sleep
 import logging
-from decimal import Decimal
 from datetime import datetime
 from datetime import timedelta
+from requests.exceptions import ConnectionError
 from parser import DSNParser
 
 
@@ -13,27 +13,45 @@ class DSN(object):
         self.log = logging.getLogger(__name__)
         self.parser = DSNParser()
         self.last_config_update = None
+        self.status_update_interval = 5  # Seconds
+        self.config_update_interval = 600  # Seconds
         self.data = None
+        self.update_callback = None
 
     def update(self):
         if self.last_config_update is None or \
-           self.last_config_update < datetime.now() - timedelta(minutes=10):
+           self.last_config_update < datetime.now() - timedelta(minutes=self.config_update_interval):
             self.sites, self.spacecraft = self.parser.fetch_config()
 
-        new_data = self.parser.fetch_data()
+        try:
+            new_data = self.parser.fetch_data()
+        except ConnectionError, e:
+            self.log.warn("Unable to fetch data from DSN: %s" % e)
+            return
+
         if self.data is not None:
             self.compare_data(self.data, new_data)
 
         self.data = new_data
 
     def compare_data(self, old, new):
-        pass
+        for antenna, new_status in new.iteritems():
+            if antenna not in old:
+                # Antenna has gone away (oh no)
+                continue
+            old_status = old[antenna]
+            # The "updated" flag doesn't get flipped except for especially significant status
+            # changes, but we care about them all
+            updated = new_status['updated'] > old_status['updated']
+            for signal in ('down_signal', 'up_signal'):
+                if (len(new_status[signal]) > 0 and len(old_status[signal]) == 0) or \
+                   (len(new_status[signal]) > 0 and
+                        new_status[signal][0]['debug'] != old_status[signal][0]['debug']):
+                    updated = True
+            if updated and self.update_callback:
+                self.update_callback(antenna, old_status, new_status)
 
     def run(self):
         while True:
             self.update()
-            sleep(5)
-
-if __name__ == '__main__':
-    dsn = DSN()
-    dsn.run()
+            sleep(self.status_update_interval)
