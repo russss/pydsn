@@ -18,6 +18,7 @@ class DSNParser(object):
 
     def __init__(self):
         self.log = logging.getLogger(__name__)
+        self.http_session = requests.Session()
 
     def get_url(self):
         return "http://eyes.nasa.gov/dsn/data/dsn.xml?r=%s" % (int)(time.time() / 5)
@@ -28,7 +29,7 @@ class DSNParser(object):
     def fetch_data(self):
         url = self.get_url()
         self.log.debug("Fetching %s" % url)
-        response = requests.get(url)
+        response = self.http_session.get(url)
         doc = etree.fromstring(response.content)
         dishes = doc.xpath('/dsn/dish')
         result = {}
@@ -111,7 +112,7 @@ class DSNParser(object):
     def fetch_config(self):
         url = self.get_config_url()
         self.log.debug("Fetching config %s" % url)
-        response = requests.get(url)
+        response = self.http_session.get(url)
         doc = etree.fromstring(response.content)
         spacecraft = self.fetch_spacecraft(doc.xpath('/config/spacecraftMap/spacecraft'))
         sites = self.fetch_sites(doc.xpath('/config/sites/site'))
