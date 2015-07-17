@@ -9,7 +9,7 @@ from lxml import etree
 
 
 def to_decimal(value):
-    if value == '':
+    if value == '' or value == 'null':
         return None
     return Decimal(value)
 
@@ -94,17 +94,17 @@ class DSNParser(object):
         if signal.get('power') == '':
             data['power'] = None
         else:
-            data['power'] = Decimal(signal.get('power'))    # Power (in dBm for downlink, kW for uplink.)
+            data['power'] = to_decimal(signal.get('power'))    # Power (in dBm for downlink, kW for uplink.)
 
         if signal.get('frequency') == '' or signal.get('frequency') == 'none':
             data['frequency'] = None
         else:
-            data['frequency'] = Decimal(signal.get('frequency'))   # Frequency (Hz). Always present but may be wrong if type is none
+            data['frequency'] = to_decimal(signal.get('frequency'))   # Frequency (Hz). Always present but may be wrong if type is none
 
         if signal.get('dataRate') == '':
             data['data_rate'] = None
         else:
-            data['data_rate'] = Decimal(signal.get('dataRate'))    # Data rate, bits per second
+            data['data_rate'] = to_decimal(signal.get('dataRate'))    # Data rate, bits per second
 
         return data
 
