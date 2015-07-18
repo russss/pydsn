@@ -17,6 +17,12 @@ spacecraft_twitter_names = {
     'MOM': 'MarsOrbiter'
 }
 
+dscc_locations = {
+    'mdscc': (40.429167, -4.249167),
+    'cdscc': (-35.401389, 148.981667),
+    'gdscc': (35.426667, -116.89)
+}
+
 
 def to_GHz(freq):
     if freq is None:
@@ -144,6 +150,7 @@ class TweetDSN(object):
             sc_name = self.dsn.spacecraft.get(spacecraft.lower(), spacecraft)
 
         antenna = self.antenna_info(state.antenna)
+        lat, lon = dscc_locations[antenna['site']]
         old_state = self.state[spacecraft]
         message = None
         if state.status == 'carrier' and old_state.status == 'none':
@@ -159,7 +166,7 @@ class TweetDSN(object):
                 self.last_updates[spacecraft] = deque(maxlen=25)
             self.last_updates[spacecraft].append((datetime.now(), state))
             try:
-                self.twitter.update_status(status=message)
+                self.twitter.update_status(status=message, lat=lat, long=lon)
             except TweepError:
                 self.log.exception("Tweet error")
             print(message)
@@ -181,7 +188,8 @@ class TweetDSN(object):
         for site, site_info in self.dsn.sites.iteritems():
             for ant, antenna_info in site_info['dishes'].iteritems():
                 if antenna == ant:
-                    return {"site": site_info['friendly_name'],
+                    return {"site_friendly_name": site_info['friendly_name'],
+                            "site": site,
                             "friendly_name": antenna_info['friendly_name']}
 
     def run(self):
