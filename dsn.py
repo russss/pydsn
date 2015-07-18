@@ -16,7 +16,8 @@ class DSN(object):
         self.status_update_interval = 5  # Seconds
         self.config_update_interval = 600  # Seconds
         self.data = None
-        self.update_callback = None
+        self.update_callback = None  # Called per-antenna if the status has changed
+        self.data_callback = None    # Called for every new data update
 
     def update(self):
         if self.last_config_update is None or \
@@ -31,10 +32,15 @@ class DSN(object):
 
         if self.data is not None:
             self.compare_data(self.data, new_data)
+            if self.data_callback:
+                self.data_callback(self.data, new_data)
 
         self.data = new_data
 
     def compare_data(self, old, new):
+        if not self.update_callback:
+            return
+
         for antenna, new_status in new.iteritems():
             if antenna not in old:
                 # Antenna has gone away (oh no)
@@ -48,7 +54,7 @@ class DSN(object):
                    (len(new_status[signal]) > 0 and
                         new_status[signal][0]['debug'] != old_status[signal][0]['debug']):
                     updated = True
-            if updated and self.update_callback:
+            if updated:
                 self.update_callback(antenna, old_status, new_status)
 
     def run(self):
