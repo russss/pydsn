@@ -158,11 +158,13 @@ class TweetDSN(object):
         old_state = self.state[spacecraft]
         message = None
         if state.status == 'carrier' and old_state.status == 'none':
-            message = "%s carrier lock on %s at %sGHz:\n%s" % \
+            message = """%s carrier lock on %s\nFrequency: %sGHz\nSignal strength: %sdBm\n%s""" % \
                       (antenna['friendly_name'], sc_name,
-                       to_GHz(state.data['frequency']), state.data['debug'])
+                       to_GHz(state.data['frequency']),
+                       int(state.data['power']),
+                       state.data['debug'])
         if state.status == 'data' and old_state.status in ('none', 'carrier'):
-            message = "%s receiving data from %s at %s:\n%s" % \
+            message = "%s receiving data from %s at %s.\n%s" % \
                       (antenna['friendly_name'], sc_name, format_datarate(state.data['data_rate']),
                        state.data['debug'])
         if message is not None:
