@@ -144,6 +144,10 @@ class TweetDSN(object):
             self.log.info("%s state updates processed, %s updates deferred", tweets, deferred)
 
     def tweet(self, spacecraft, state):
+        if not self.should_tweet(spacecraft, state):
+            self.log.info("Not tweeting about %s being in state %s", spacecraft, state)
+            return
+
         if spacecraft in spacecraft_twitter_names:
             sc_name = '@' + spacecraft_twitter_names[spacecraft]
         else:
