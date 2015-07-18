@@ -32,7 +32,7 @@ def to_GHz(freq):
 
 def format_datarate(rate):
     if rate < 1000:
-        return "%sb/s" % (round(rate, 0))
+        return "%sb/s" % (int(rate))
     elif rate < 500000:
         return "%skb/s" % (round(rate / 1000, 1))
     else:
