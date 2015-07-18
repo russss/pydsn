@@ -84,7 +84,7 @@ class TweetDSN(object):
         self.pending_updates = {}
         self.state = {}
         self.last_updates = {}
-        self.spacecraft_blacklist = set(['TEST', 'GRAY', 'GBRA'])
+        self.spacecraft_blacklist = set(['TEST', 'GRAY', 'GBRA', 'DSN'])
 
     def data_callback(self, _old, new):
         signals = defaultdict(list)
@@ -158,11 +158,14 @@ class TweetDSN(object):
         old_state = self.state[spacecraft]
         message = None
         if state.status == 'carrier' and old_state.status == 'none':
-            message = """%s carrier lock on %s\nFrequency: %sGHz\nSignal strength: %sdBm\n%s""" % \
+            message = "%s carrier lock on %s\nFrequency: %sGHz\n" % \
                       (antenna['friendly_name'], sc_name,
-                       to_GHz(state.data['frequency']),
-                       int(state.data['power']),
-                       state.data['debug'])
+                       to_GHz(state.data['frequency']))
+            # Ignore obviously wrong Rx power numbers - sometimes we see a lock before
+            # Rx power settles down.
+            if state.data['power'] > -200:
+                message += "Signal strength: %sdBm\n" % (int(state.data['power']))
+            message += state.data['debug']
         if state.status == 'data' and old_state.status in ('none', 'carrier'):
             message = "%s receiving data from %s at %s.\n%s" % \
                       (antenna['friendly_name'], sc_name, format_datarate(state.data['data_rate']),
@@ -179,14 +182,14 @@ class TweetDSN(object):
 
     def should_tweet(self, spacecraft, state):
         """ Last check to decide if we should tweet this update. Don't tweet about the same
-            (spacecraft, antenna, status) more than once every 2 hours."""
+            (spacecraft, antenna, status) more than once every n hours."""
         if spacecraft not in self.last_updates:
             return True
         for update in self.last_updates[spacecraft]:
             timestamp, previous_state = update
             if (previous_state.status == state.status and
                     previous_state.antenna == state.antenna and
-                    timestamp > datetime.now() - timedelta(hours=2)):
+                    timestamp > datetime.now() - timedelta(hours=6)):
                 return False
         return True
 
