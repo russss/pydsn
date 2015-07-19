@@ -14,7 +14,8 @@ spacecraft_twitter_names = {
     'NHPC': 'NewHorizons2015',
     'ROSE': 'ESA_Rosetta',
     'CAS': 'CassiniSaturn',
-    'MOM': 'MarsOrbiter'
+    'MOM': 'MarsOrbiter',
+    'KEPL': 'NASAKepler'
 }
 
 dscc_locations = {
@@ -84,7 +85,7 @@ class TweetDSN(object):
         self.pending_updates = {}
         self.state = {}
         self.last_updates = {}
-        self.spacecraft_blacklist = set(['TEST', 'GRAY', 'GBRA', 'DSN'])
+        self.spacecraft_blacklist = set(['TEST', 'GRAY', 'GBRA', 'DSN', 'VLBI', 'RSTS'])
 
     def data_callback(self, _old, new):
         signals = defaultdict(list)
