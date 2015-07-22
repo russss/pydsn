@@ -20,11 +20,10 @@ class DSN(object):
         self.data_callback = None    # Called for every new data update
 
     def update(self):
-        if self.last_config_update is None or \
-           self.last_config_update < datetime.now() - timedelta(minutes=self.config_update_interval):
-            self.sites, self.spacecraft = self.parser.fetch_config()
-
         try:
+            if self.last_config_update is None or \
+               self.last_config_update < datetime.now() - timedelta(minutes=self.config_update_interval):
+                self.sites, self.spacecraft = self.parser.fetch_config()
             new_data = self.parser.fetch_data()
         except ConnectionError, e:
             self.log.warn("Unable to fetch data from DSN: %s" % e)
