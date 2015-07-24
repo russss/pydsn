@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 from requests.exceptions import ConnectionError
+from lxml.etree import LxmlError
 from parser import DSNParser
 
 
@@ -27,6 +28,9 @@ class DSN(object):
             new_data = self.parser.fetch_data()
         except ConnectionError, e:
             self.log.warn("Unable to fetch data from DSN: %s" % e)
+            return
+        except LxmlError, e:
+            self.log.warn("Unable to parse data: %s", e)
             return
 
         if self.data is not None:
