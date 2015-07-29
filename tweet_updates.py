@@ -155,8 +155,8 @@ class TweetDSN(object):
             sc_name = self.dsn.spacecraft.get(spacecraft.lower(), spacecraft)
 
         antenna = self.antenna_info(state.antenna)
-        if antenna['site'] not in dscc_locations:
-            self.log.warn("Antenna site %s not found in dscc_locations", antenna['site'])
+        if antenna is None or antenna['site'] not in dscc_locations:
+            self.log.warn("Antenna site %s not found in dscc_locations", antenna)
             return
         lat, lon = dscc_locations[antenna['site']]
         old_state = self.state[spacecraft]
