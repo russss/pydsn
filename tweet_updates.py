@@ -15,7 +15,8 @@ spacecraft_twitter_names = {
     'ROSE': 'ESA_Rosetta',
     'CAS': 'CassiniSaturn',
     'MOM': 'MarsOrbiter',
-    'KEPL': 'NASAKepler'
+    'KEPL': 'NASAKepler',
+    'ORX': 'OSIRISREx'
 }
 
 dscc_locations = {
