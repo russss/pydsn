@@ -26,10 +26,10 @@ class DSN(object):
                self.last_config_update < datetime.now() - timedelta(minutes=self.config_update_interval):
                 self.sites, self.spacecraft = self.parser.fetch_config()
             new_data = self.parser.fetch_data()
-        except ConnectionError, e:
+        except ConnectionError as e:
             self.log.warn("Unable to fetch data from DSN: %s" % e)
             return
-        except LxmlError, e:
+        except LxmlError as e:
             self.log.warn("Unable to parse data: %s", e)
             return
 
