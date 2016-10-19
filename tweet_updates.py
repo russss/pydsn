@@ -12,11 +12,11 @@ from dsn import DSN
 spacecraft_twitter_names = {
     'MSL': 'MarsCuriosity',
     'NHPC': 'NewHorizons2015',
-    'ROSE': 'ESA_Rosetta',
     'CAS': 'CassiniSaturn',
     'MOM': 'MarsOrbiter',
     'KEPL': 'NASAKepler',
-    'ORX': 'OSIRISREx'
+    'ORX': 'OSIRISREx',
+    'TGO': 'ESA_TGO'
 }
 
 dscc_locations = {
