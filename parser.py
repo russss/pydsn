@@ -21,10 +21,10 @@ class DSNParser(object):
         self.http_session = requests.Session()
 
     def get_url(self):
-        return "http://eyes.nasa.gov/dsn/data/dsn.xml?r=%s" % (int)(time.time() / 5)
+        return "https://eyes.jpl.nasa.gov/dsn/data/dsn.xml?r=%s" % (int)(time.time() / 5)
 
     def get_config_url(self):
-        return "http://eyes.nasa.gov/dsn/config.xml"
+        return "https://eyes.jpl.nasa.gov/dsn/config.xml"
 
     def fetch_data(self):
         url = self.get_url()
