@@ -44,7 +44,7 @@ class DSN(object):
         if not self.update_callback:
             return
 
-        for antenna, new_status in new.iteritems():
+        for antenna, new_status in new.items():
             if antenna not in old:
                 # Antenna has gone away (oh no)
                 continue

@@ -4,19 +4,20 @@ from polybot import Bot
 from dsn import DSN
 
 spacecraft_twitter_names = {
-    'MSL': 'MarsCuriosity',
-    'NHPC': 'NewHorizons2015',
-    'CAS': 'CassiniSaturn',
-    'MOM': 'MarsOrbiter',
-    'KEPL': 'NASAKepler',
-    'ORX': 'OSIRISREx',
-    'TGO': 'ESA_TGO'
+    "MSL": "MarsCuriosity",
+    "NHPC": "NewHorizons2015",
+    "CAS": "CassiniSaturn",
+    "MOM": "MarsOrbiter",
+    "KEPL": "NASAKepler",
+    "ORX": "OSIRISREx",
+    "TGO": "ESA_TGO",
+    "NSYT": "NASAInSight",
 }
 
 dscc_locations = {
-    'mdscc': (40.429167, -4.249167),
-    'cdscc': (-35.401389, 148.981667),
-    'gdscc': (35.426667, -116.89)
+    "mdscc": (40.429167, -4.249167),
+    "cdscc": (-35.401389, 148.981667),
+    "gdscc": (35.426667, -116.89),
 }
 
 
@@ -37,11 +38,15 @@ def format_datarate(rate):
 
 # This state represents the per-spacecraft data which needs to change
 # in order to (possibly) generate a tweet
-State = namedtuple("State", ['antenna',   # Antenna identifier
-                             'status',    # Status (none, carrier, data)
-                             'data',
-                             'timestamp'
-                             ])
+State = namedtuple(
+    "State",
+    [
+        "antenna",  # Antenna identifier
+        "status",  # Status (none, carrier, data)
+        "data",
+        "timestamp",
+    ],
+)
 
 
 def state_changed(a, b):
@@ -54,36 +59,35 @@ def combine_state(signals):
     """ Given a number of signals from a spacecraft, find the most notable. """
     if len(signals) == 1:
         data = signals[0]
-        status = data['type']
+        status = data["type"]
     else:
-        status = 'none'
-        data = signals[0]  # Pick one signal in case we don't find a more interesting one
+        status = "none"
+        # Pick one signal in case we don't find a more interesting one
+        data = signals[0]
         for signal in signals:
-            if signal['type'] == 'carrier' and status == 'none':
-                status = 'carrier'
+            if signal["type"] == "carrier" and status == "none":
+                status = "carrier"
                 data = signal
-            elif signal['type'] == 'data' and status in ('carrier', 'none'):
-                status = 'data'
+            elif signal["type"] == "data" and status in ("carrier", "none"):
+                status = "data"
                 data = signal
-    return State(data['antenna'], status, data, datetime.now())
+    return State(data["antenna"], status, data, datetime.now())
 
 
 class TweetDSN(Bot):
     def __init__(self):
-        super().__init__('tweet_dsn')
-        self.state = {'pending_updates': {},
-                      'last_updates': {}
-                      }
-        self.spacecraft_blacklist = set(['TEST', 'GRAY', 'GBRA', 'DSN', 'VLBI', 'RSTS'])
+        super().__init__("tweet_dsn")
+        self.state = {"pending_updates": {}, "last_updates": {}}
+        self.spacecraft_blacklist = set(["TEST", "GRAY", "GBRA", "DSN", "VLBI", "RSTS"])
 
     def data_callback(self, _old, new):
         signals = defaultdict(list)
         for antenna, status in new.items():
             # Spacecraft can have more than one downlink signal, but antennas can also be
             # receiving from more than one spacecraft
-            for signal in status['down_signal']:
-                signal['antenna'] = antenna
-                signals[signal['spacecraft']].append(signal)
+            for signal in status["down_signal"]:
+                signal["antenna"] = antenna
+                signals[signal["spacecraft"]].append(signal)
 
         new_state = {}
         for spacecraft, sc_signals in signals.items():
@@ -105,33 +109,38 @@ class TweetDSN(Bot):
 
     def queue_update(self, spacecraft, state):
         # Do we already have an update queued for this spacecraft?
-        if spacecraft in self.state['pending_updates']:
-            update = self.state['pending_updates'][spacecraft]
+        if spacecraft in self.state["pending_updates"]:
+            update = self.state["pending_updates"][spacecraft]
             # Has the state changed since the last update was queued?
-            if not state_changed(update['state'], state):
+            if not state_changed(update["state"], state):
                 self.log.debug("Queueing new update for %s: %s", spacecraft, state)
-                update['state'] = state
+                update["state"] = state
             else:
                 # Update has changed, bump the timestamp
                 self.log.debug("Postponing update for %s: %s", spacecraft, state)
-                update = {'state': state, 'timestamp': datetime.now()}
+                update = {"state": state, "timestamp": datetime.now()}
         else:
-            self.state['pending_updates'][spacecraft] = {'state': state, 'timestamp': datetime.now()}
+            self.state["pending_updates"][spacecraft] = {
+                "state": state,
+                "timestamp": datetime.now(),
+            }
 
     def process_updates(self):
         new_updates = {}
         tweets = deferred = 0
-        for spacecraft, update in self.state['pending_updates'].items():
-            if update['timestamp'] < datetime.now() - timedelta(seconds=63):
+        for spacecraft, update in self.state["pending_updates"].items():
+            if update["timestamp"] < datetime.now() - timedelta(seconds=63):
                 tweets += 1
-                self.tweet(spacecraft, update['state'])
-                self.state[spacecraft] = update['state']
+                self.tweet(spacecraft, update["state"])
+                self.state[spacecraft] = update["state"]
             else:
                 deferred += 1
                 new_updates[spacecraft] = update
-        self.state['pending_updates'] = new_updates
+        self.state["pending_updates"] = new_updates
         if tweets > 0 or deferred > 0:
-            self.log.info("%s state updates processed, %s updates deferred", tweets, deferred)
+            self.log.info(
+                "%s state updates processed, %s updates deferred", tweets, deferred
+            )
 
     def tweet(self, spacecraft, state):
         if not self.should_tweet(spacecraft, state):
@@ -139,56 +148,65 @@ class TweetDSN(Bot):
             return
 
         if spacecraft in spacecraft_twitter_names:
-            sc_name = '@' + spacecraft_twitter_names[spacecraft]
+            sc_name = "@" + spacecraft_twitter_names[spacecraft]
         else:
             sc_name = self.dsn.spacecraft.get(spacecraft.lower(), spacecraft)
 
         antenna = self.antenna_info(state.antenna)
-        if antenna is None or antenna['site'] not in dscc_locations:
+        if antenna is None or antenna["site"] not in dscc_locations:
             self.log.warn("Antenna site %s not found in dscc_locations", antenna)
             return
-        lat, lon = dscc_locations[antenna['site']]
+        lat, lon = dscc_locations[antenna["site"]]
         old_state = self.state[spacecraft]
         message = None
-        if state.status == 'carrier' and old_state.status == 'none':
-            message = "%s carrier lock on %s\nFrequency: %sGHz\n" % \
-                      (antenna['friendly_name'], sc_name,
-                       to_GHz(state.data['frequency']))
+        if state.status == "carrier" and old_state.status == "none":
+            message = "%s carrier lock on %s\nFrequency: %sGHz\n" % (
+                antenna["friendly_name"],
+                sc_name,
+                to_GHz(state.data["frequency"]),
+            )
             # Ignore obviously wrong Rx power numbers - sometimes we see a lock before
             # Rx power settles down.
-            if state.data['power'] > -200:
-                message += "Signal strength: %sdBm\n" % (int(state.data['power']))
-            message += state.data['debug']
-        if state.status == 'data' and old_state.status in ('none', 'carrier'):
-            message = "%s receiving data from %s at %s.\n%s" % \
-                      (antenna['friendly_name'], sc_name, format_datarate(state.data['data_rate']),
-                       state.data['debug'])
+            if state.data["power"] > -200:
+                message += "Signal strength: %sdBm\n" % (int(state.data["power"]))
+            message += state.data["debug"]
+        if state.status == "data" and old_state.status in ("none", "carrier"):
+            message = "%s receiving data from %s at %s.\n%s" % (
+                antenna["friendly_name"],
+                sc_name,
+                format_datarate(state.data["data_rate"]),
+                state.data["debug"],
+            )
         if message is not None:
-            if spacecraft not in self.state['last_updates']:
-                self.state['last_updates'][spacecraft] = deque(maxlen=25)
-            self.state['last_updates'][spacecraft].append((datetime.now(), state))
+            if spacecraft not in self.state["last_updates"]:
+                self.state["last_updates"][spacecraft] = deque(maxlen=25)
+            self.state["last_updates"][spacecraft].append((datetime.now(), state))
             self.post(message, lat=lat, lon=lon)
 
     def should_tweet(self, spacecraft, state):
         """ Last check to decide if we should tweet this update. Don't tweet about the same
             (spacecraft, antenna, status) more than once every n hours."""
-        if spacecraft not in self.state['last_updates']:
+        if spacecraft not in self.state["last_updates"]:
             return True
-        for update in self.state['last_updates'][spacecraft]:
+        for update in self.state["last_updates"][spacecraft]:
             timestamp, previous_state = update
-            if (previous_state.status == state.status and
-                    previous_state.antenna == state.antenna and
-                    timestamp > datetime.now() - timedelta(hours=6)):
+            if (
+                previous_state.status == state.status
+                and previous_state.antenna == state.antenna
+                and timestamp > datetime.now() - timedelta(hours=6)
+            ):
                 return False
         return True
 
     def antenna_info(self, antenna):
         for site, site_info in self.dsn.sites.items():
-            for ant, antenna_info in site_info['dishes'].items():
+            for ant, antenna_info in site_info["dishes"].items():
                 if antenna == ant:
-                    return {"site_friendly_name": site_info['friendly_name'],
-                            "site": site,
-                            "friendly_name": antenna_info['friendly_name']}
+                    return {
+                        "site_friendly_name": site_info["friendly_name"],
+                        "site": site,
+                        "friendly_name": antenna_info["friendly_name"],
+                    }
 
     def main(self):
         self.dsn = DSN()
