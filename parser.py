@@ -46,8 +46,6 @@ class DSNParser(object):
             'mspa': dish.get('isMSPA') == 'true',                   # Multiple Spacecraft Per Aperture
             'array': dish.get('isArray') == 'true',                 # Dish is arrayed
             'ddor': dish.get('isDDOR') == 'true',                   # Delta-Differenced One Way Range
-            'created': dateutil.parser.parse(dish.get('created')),
-            'updated': dateutil.parser.parse(dish.get('updated')),
             'targets': {},
             'up_signal': [],
             'down_signal': []

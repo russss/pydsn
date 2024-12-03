@@ -1,5 +1,3 @@
-# coding=utf-8
-from __future__ import division, absolute_import, print_function, unicode_literals
 import logging
 from dsn import DSN
 
@@ -29,7 +27,7 @@ def update_callback(antenna, old, new):
                signal['debug'], to_GHz(signal['frequency'])))
 
 
-logging.basicConfig()
+logging.basicConfig(level=logging.DEBUG)
 dsn = DSN()
 dsn.update_callback = update_callback
 dsn.run()

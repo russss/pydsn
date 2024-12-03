@@ -1,3 +1,4 @@
 *.state
 *.conf
 *.pyc
+.venv

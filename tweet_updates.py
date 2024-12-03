@@ -3,28 +3,11 @@ from datetime import datetime, timedelta
 from polybot import Bot
 from dsn import DSN
 
-spacecraft_twitter_names = {
-    "MSL": "MarsCuriosity",
-    "NHPC": "NewHorizons2015",
-    "CAS": "CassiniSaturn",
-    "MOM": "MarsOrbiter",
-    "KEPL": "NASAKepler",
-    "ORX": "OSIRISREx",
-    "TGO": "ESA_TGO",
-    "NSYT": "NASAInSight",
-}
-
-dscc_locations = {
-    "mdscc": (40.429167, -4.249167),
-    "cdscc": (-35.401389, 148.981667),
-    "gdscc": (35.426667, -116.89),
-}
-
 
 def to_GHz(freq):
     if freq is None:
         return None
-    return str(round(float(freq) / 10 ** 9, 4))
+    return str(round(float(freq) / 10**9, 4))
 
 
 def format_datarate(rate):
@@ -56,7 +39,7 @@ def state_changed(a, b):
 
 
 def combine_state(signals):
-    """ Given a number of signals from a spacecraft, find the most notable. """
+    """Given a number of signals from a spacecraft, find the most notable."""
     if len(signals) == 1:
         data = signals[0]
         status = data["type"]
@@ -144,19 +127,12 @@ class TweetDSN(Bot):
 
     def tweet(self, spacecraft, state):
         if not self.should_tweet(spacecraft, state):
-            self.log.info("Not tweeting about %s being in state %s", spacecraft, state)
+            self.log.info("Not posting about %s being in state %s", spacecraft, state)
             return
 
-        if spacecraft in spacecraft_twitter_names:
-            sc_name = "@" + spacecraft_twitter_names[spacecraft]
-        else:
-            sc_name = self.dsn.spacecraft.get(spacecraft.lower(), spacecraft)
+        sc_name = self.dsn.spacecraft.get(spacecraft.lower(), spacecraft)
 
         antenna = self.antenna_info(state.antenna)
-        if antenna is None or antenna["site"] not in dscc_locations:
-            self.log.warn("Antenna site %s not found in dscc_locations", antenna)
-            return
-        lat, lon = dscc_locations[antenna["site"]]
         old_state = self.state[spacecraft]
         message = None
         if state.status == "carrier" and old_state.status == "none":
@@ -171,21 +147,20 @@ class TweetDSN(Bot):
                 message += "Signal strength: %sdBm\n" % (int(state.data["power"]))
             message += state.data["debug"]
         if state.status == "data" and old_state.status in ("none", "carrier"):
-            message = "%s receiving data from %s at %s.\n%s" % (
+            message = "%s receiving data from %s at %s." % (
                 antenna["friendly_name"],
                 sc_name,
                 format_datarate(state.data["data_rate"]),
-                state.data["debug"],
             )
         if message is not None:
             if spacecraft not in self.state["last_updates"]:
                 self.state["last_updates"][spacecraft] = deque(maxlen=25)
             self.state["last_updates"][spacecraft].append((datetime.now(), state))
-            self.post(message, lat=lat, lon=lon)
+            self.post(message)
 
     def should_tweet(self, spacecraft, state):
-        """ Last check to decide if we should tweet this update. Don't tweet about the same
-            (spacecraft, antenna, status) more than once every n hours."""
+        """Last check to decide if we should tweet this update. Don't tweet about the same
+        (spacecraft, antenna, status) more than once every n hours."""
         if spacecraft not in self.state["last_updates"]:
             return True
         for update in self.state["last_updates"][spacecraft]:
